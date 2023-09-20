@@ -29,21 +29,66 @@ gltfLoader.setDRACOLoader(dracoLoader)
 
 let mixer = null;
 
+// ... (tu código existente)
+
+
+
 gltfLoader.load(
     '/models/Fox/glTF/Fox.gltf',
-    (gltf) =>{
-        //console.log(gltf)
-        mixer = new THREE.AnimationMixer(gltf.scene)
-        const action = mixer.clipAction(gltf.animations[0])
-        //console.log(action)
+    (gltf) => {
+        mixer = new THREE.AnimationMixer(gltf.scene);
+        const animations = gltf.animations;
 
-        action.play()
+        // Verificar si el modelo tiene animaciones
+        if (animations && animations.length > 0) {
+            // Crear un objeto para almacenar las opciones de animación
+            const animationOptions = {};
 
+            // Variable para almacenar las acciones de animación activas
+            let activeActions = [];
 
-        gltf.scene.scale.set(0.025,0.025,0.025)
-        scene.add(gltf.scene)
+            // Callback para detener todas las animaciones activas
+            const stopAllAnimations = () => {
+                for (const action of activeActions) {
+                    action.stop();
+                }
+                activeActions = [];
+            };
+
+            // Iterar a través de todas las animaciones en el modelo
+            for (let i = 0; i < animations.length; i++) {
+                const animation = animations[i];
+
+                // Agregar una opción para reproducir cada animación
+                animationOptions[`playAnimation${i}`] = () => {
+                    const action = mixer.clipAction(animation);
+                    action.play();
+                    activeActions.push(action);
+                };
+            }
+
+            // Agregar una opción para detener todas las animaciones
+            animationOptions.stopAllAnimations = () => {
+                stopAllAnimations();
+            };
+
+            // Agregar controles al panel de dat.GUI
+            const animationFolder = gui.addFolder('Animaciones');
+            for (let i = 0; i < animations.length; i++) {
+                animationFolder.add(animationOptions, `playAnimation${i}`).name(`Animación ${i}`);
+            }
+            animationFolder.add(animationOptions, 'stopAllAnimations').name('Detener animaciones');
+        }
+
+        gltf.scene.scale.set(0.025, 0.025, 0.025);
+        scene.add(gltf.scene);
     },
-    
+    () => {
+        console.log('progress');
+    }
+);
+
+
 
 
 
@@ -87,13 +132,13 @@ gltfLoader.load(
     //     //console.log(gltf)
     //     scene.add(gltf.scene.children[0])
     // },
-    () =>{
-        console.log('progress')
-    },
+    // () =>{
+    //     console.log('progress')
+    // },
     // () =>{
     //     console.error('error')
     // },
-    )
+    
 
 /**
  * Floor
